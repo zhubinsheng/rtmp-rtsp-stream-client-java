@@ -65,11 +65,9 @@ import static android.content.Context.MEDIA_PROJECTION_SERVICE;
  * Created by pedro on 9/08/17.
  */
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrophoneData {
+public abstract class SurfaceExposed implements GetAacData, GetVideoData, GetMicrophoneData {
 
   private OffScreenGlThread glInterface;
-  private MediaProjection mediaProjection;
-  private final MediaProjectionManager mediaProjectionManager;
   protected VideoEncoder videoEncoder;
   private MicrophoneManager microphoneManager;
   private AudioEncoder audioEncoder;
@@ -82,13 +80,11 @@ public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrop
   private final FpsListener fpsListener = new FpsListener();
   private boolean audioInitialized = false;
 
-  public DisplayBase(Context context, boolean useOpengl) {
+  public SurfaceExposed(Context context, boolean useOpengl) {
     if (useOpengl) {
       glInterface = new OffScreenGlThread(context);
       glInterface.init();
     }
-    mediaProjectionManager =
-        ((MediaProjectionManager) context.getSystemService(MEDIA_PROJECTION_SERVICE));
     this.surfaceView = null;
     videoEncoder = new VideoEncoder(this);
     audioEncoder = new AudioEncoder(this);
@@ -226,20 +222,7 @@ public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrop
   @RequiresApi(api = Build.VERSION_CODES.Q)
   public boolean prepareInternalAudio(int bitrate, int sampleRate, boolean isStereo,
       boolean echoCanceler, boolean noiseSuppressor) {
-    if (mediaProjection == null) {
-      mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data);
-    }
 
-    AudioPlaybackCaptureConfiguration config =
-        new AudioPlaybackCaptureConfiguration.Builder(mediaProjection).addMatchingUsage(
-            AudioAttributes.USAGE_MEDIA)
-            .addMatchingUsage(AudioAttributes.USAGE_GAME)
-            .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
-            .build();
-    if (!microphoneManager.createInternalMicrophone(config, sampleRate, isStereo, echoCanceler,
-        noiseSuppressor)) {
-      return false;
-    }
     prepareAudioRtp(isStereo, sampleRate);
     audioInitialized = audioEncoder.prepareAudioEncoder(bitrate, sampleRate, isStereo,
         microphoneManager.getMaxInputSize());
@@ -341,15 +324,6 @@ public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrop
 
   protected abstract void startStreamRtp(String url);
 
-  /**
-   * Create Intent used to init screen capture with startActivityForResult.
-   *
-   * @return intent to startActivityForResult.
-   */
-  public Intent sendIntent() {
-    return mediaProjectionManager.createScreenCaptureIntent();
-  }
-
   public void setIntentResult(int resultCode, Intent data) {
     this.resultCode = resultCode;
     this.data = data;
@@ -376,10 +350,7 @@ public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrop
     startStreamRtp(url);
   }
 
-  private void startEncoders(int resultCode, Intent data) {
-    if (data == null) {
-      throw new RuntimeException("You need send intent data before startRecord or startStream");
-    }
+  private Surface startEncoders(int resultCode, Intent data) {
     videoEncoder.start();
     if (audioInitialized) audioEncoder.start();
     if (glInterface != null) {
@@ -389,18 +360,16 @@ public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrop
     }
     Surface surface =
         (glInterface != null) ? glInterface.getSurface() : videoEncoder.getInputSurface();
-    if (mediaProjection == null) {
-      mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data);
-    }
+
     if (glInterface != null && videoEncoder.getRotation() == 90
         || videoEncoder.getRotation() == 270) {
-      mediaProjection.createVirtualDisplay("Stream Display", videoEncoder.getHeight(),
-              videoEncoder.getWidth(), dpi, 0, surface, null, null);
+
     } else {
-      mediaProjection.createVirtualDisplay("Stream Display", videoEncoder.getWidth(),
-              videoEncoder.getHeight(), dpi, 0, surface, null, null);
+
     }
     if (audioInitialized) microphoneManager.start();
+
+    return surface;
   }
 
   protected void requestKeyFrame() {
@@ -419,9 +388,7 @@ public abstract class DisplayBase implements GetAacData, GetVideoData, GetMicrop
     }
     if (!recordController.isRecording()) {
       if (audioInitialized) microphoneManager.stop();
-      if (mediaProjection != null) {
-        mediaProjection.stop();
-      }
+
       if (glInterface != null) {
         glInterface.removeMediaCodecSurface();
         glInterface.stop();

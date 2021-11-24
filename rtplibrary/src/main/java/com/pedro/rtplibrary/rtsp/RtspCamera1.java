@@ -48,6 +48,7 @@ public class RtspCamera1 extends Camera1Base {
   public RtspCamera1(SurfaceView surfaceView, ConnectCheckerRtsp connectCheckerRtsp) {
     super(surfaceView);
     rtspClient = new RtspClient(connectCheckerRtsp);
+
   }
 
   public RtspCamera1(TextureView textureView, ConnectCheckerRtsp connectCheckerRtsp) {

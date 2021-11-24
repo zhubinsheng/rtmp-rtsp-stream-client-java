@@ -31,6 +31,7 @@ import com.pedro.rtplibrary.rtmp.RtmpDisplay
 import com.pedro.rtplibrary.rtsp.RtspDisplay
 import com.pedro.rtpstreamer.R
 import com.pedro.rtpstreamer.backgroundexample.ConnectCheckerRtp
+import com.pedro.rtspserver.RtspServerDisplay
 
 
 /**
@@ -67,7 +68,9 @@ class DisplayService : Service() {
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     INSTANCE = this
     Log.i(TAG, "RTP Display service started")
-    displayBase = RtmpDisplay(baseContext, true, connectCheckerRtp)
+//    displayBase = RtmpDisplay(baseContext, true, connectCheckerRtp)
+    displayBase = RtspServerDisplay(baseContext, true, connectCheckerRtp, 1935)
+
     displayBase?.glInterface?.setForceRender(true)
     return START_STICKY
   }
@@ -80,7 +83,7 @@ class DisplayService : Service() {
   }
 
   private var notificationManager: NotificationManager? = null
-  private var displayBase: DisplayBase? = null
+  private var displayBase: RtspServerDisplay? = null
 
   fun sendIntent(): Intent? {
     return displayBase?.sendIntent()
@@ -152,13 +155,16 @@ class DisplayService : Service() {
 
   fun prepareStreamRtp(endpoint: String, resultCode: Int, data: Intent) {
     stopStream()
-    if (endpoint.startsWith("rtmp")) {
-      displayBase = RtmpDisplay(baseContext, true, connectCheckerRtp)
-      displayBase?.setIntentResult(resultCode, data)
-    } else {
-      displayBase = RtspDisplay(baseContext, true, connectCheckerRtp)
-      displayBase?.setIntentResult(resultCode, data)
-    }
+//    if (endpoint.startsWith("rtmp")) {
+//      displayBase = RtmpDisplay(baseContext, true, connectCheckerRtp)
+//      displayBase?.setIntentResult(resultCode, data)
+//    } else {
+//      displayBase = RtspDisplay(baseContext, true, connectCheckerRtp)
+//      displayBase?.setIntentResult(resultCode, data)
+//    }
+    displayBase = RtspServerDisplay(baseContext, true, connectCheckerRtp, 1935)
+    displayBase?.setIntentResult(resultCode, data)
+
     displayBase?.glInterface?.setForceRender(true)
   }
 
@@ -166,6 +172,8 @@ class DisplayService : Service() {
     if (displayBase?.isStreaming != true) {
       if (displayBase?.prepareVideo() == true && displayBase?.prepareAudio() == true) {
         displayBase?.startStream(endpoint)
+        Log.e("", displayBase!!.getEndPointConnection());
+
       }
     } else {
       showNotification("You are already streaming :(")

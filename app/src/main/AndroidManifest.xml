@@ -107,6 +107,7 @@
         android:name=".backgroundexample.BackgroundActivity"
         android:label="@string/service_rtp"
         />
+    <activity android:name=".CameraDemoActivity"/>
 
     <service android:name=".backgroundexample.RtpService"
         />

@@ -22,6 +22,7 @@ import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -84,6 +85,7 @@ import com.pedro.rtplibrary.view.OpenGlView;
 import com.pedro.rtpstreamer.R;
 import com.pedro.rtpstreamer.utils.PathUtils;
 import com.pedro.rtsp.utils.ConnectCheckerRtsp;
+import com.pedro.rtspserver.RtspServerCamera1;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,7 +108,7 @@ public class OpenGlRtspActivity extends AppCompatActivity
     implements ConnectCheckerRtsp, View.OnClickListener, SurfaceHolder.Callback,
     View.OnTouchListener {
 
-  private RtspCamera1 rtspCamera1;
+  private RtspServerCamera1 rtspCamera1;
   private Button button;
   private Button bRecord;
   private EditText etUrl;
@@ -131,7 +133,7 @@ public class OpenGlRtspActivity extends AppCompatActivity
     switchCamera.setOnClickListener(this);
     etUrl = findViewById(R.id.et_rtp_url);
     etUrl.setHint(R.string.hint_rtsp);
-    rtspCamera1 = new RtspCamera1(openGlView, this);
+    rtspCamera1 = new RtspServerCamera1(openGlView, this, 1935);
     openGlView.getHolder().addCallback(this);
     openGlView.setOnTouchListener(this);
   }
@@ -424,7 +426,10 @@ public class OpenGlRtspActivity extends AppCompatActivity
           if (rtspCamera1.isRecording()
               || rtspCamera1.prepareAudio() && rtspCamera1.prepareVideo()) {
             button.setText(R.string.stop_button);
-            rtspCamera1.startStream(etUrl.getText().toString());
+            rtspCamera1.startStream();
+
+            Log.e("", rtspCamera1.getEndPointConnection());
+
           } else {
             Toast.makeText(this, "Error preparing stream, This device cant do it",
                 Toast.LENGTH_SHORT).show();

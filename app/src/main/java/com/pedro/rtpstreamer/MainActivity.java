@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     if (!hasPermissions(this, PERMISSIONS)) {
       ActivityCompat.requestPermissions(this, PERMISSIONS, 1);
     }
+//    startActivity(new Intent(this,CameraDemoActivity.class));
   }
 
   private void createList() {
